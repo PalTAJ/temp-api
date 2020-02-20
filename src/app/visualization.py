@@ -49,14 +49,14 @@ class HeatmapVisualization:
 
     def eliminate_low_variance(self):
         vect = DictVectorizer(sparse=False)
-        vt = VarianceThreshold(100)
+        # vt = VarianceThreshold(100)
 
         pipe = Pipeline([
             ('vect', vect),
-            ('vt', vt),
-            ('inv_vec', InverseDictVectorizer(vect, vt)),
+            # ('vt', vt),
+            ('inv_vec', InverseDictVectorizer(vect)),
         ])
-
+        print(pipe.fit_transform(self.X))
         return pipe.fit_transform(self.X)
 
     def clustered_data(self):

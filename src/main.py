@@ -53,7 +53,9 @@ def migrate():
     db.create_all()
     do_parser = DOParser()
     do_parser.start()
-    print(do_parser.diseases)
+    # print(do_parser.diseases)
+    print('getting diseases Done..')
+
     for lib in do_parser.diseases:
         for temp in do_parser.diseases[lib]:
             _disease = Disease(name=temp['name'], synonym=temp['synonym'])

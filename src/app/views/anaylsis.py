@@ -163,7 +163,7 @@ def fva_analysis_public():
 
         db.session.add(analysis)
         db.session.commit()
-        
+
         if check_value == counter:
             save_analysis.delay(analysis.id, value["Metabolites"],registered=False,mail=request.json["email"],study2=request.json['study_name'])
         else:
@@ -318,28 +318,40 @@ def direct_pathway_mapping2():
 ###############################################################################
 ###############################################################################
 
+# @app.route('/analysis/set', methods=['POST'])
+# def user_analysis_set():
+#     """
+#     List of analysis of user
+#     ---
+#     tags:
+#         - analysis
+#     parameters:
+#         -
+#           name: authorization
+#           in: header
+#           type: string
+#           required:
+#     """
+    # data = request.json['data']
+    # analyses = Analysis.get_multiple(data.values())
+    # X = [i.results_pathway for i in analyses]
+    # y = [i.name for i in analyses]
+    # return AnalysisSchema(many=True).jsonify(analyses)
+
+
 @app.route('/analysis/set', methods=['POST'])
 def user_analysis_set():
-    """
-    List of analysis of user
-    ---
-    tags:
-        - analysis
-    parameters:
-        -
-          name: authorization
-          in: header
-          type: string
-          required: true
-    """
+
     data = request.json['data']
+    # print(data)
     analyses = Analysis.get_multiple(data.values())
+    # for i in analyses:
+        # print(i.results_pathway[0])
+    # X = [i.results_pathway for i in analyses]
+    # y = [i.name for i in analyses]
 
-    X = [i.results_pathway for i in analyses]
-    y = [i.name for i in analyses]
     return AnalysisSchema(many=True).jsonify(analyses)
-
-
+# ///////////////////////
 @app.route('/analysis/visualization', methods=['POST'])
 def analysis_visualization():
     """
@@ -356,13 +368,16 @@ def analysis_visualization():
     """
 
     data = request.json['data']
-    analyses = MetabolomicsData.get_multiple(data.values())
-
+    # print(data)
+    analyses = Analysis.get_multiple(data.values())
+    # print(analyses)
+    # for i in analyses:
+        # print(i.results_pathway[0])
     X = [i.results_pathway[0] for i in analyses]
     y = [i.name for i in analyses]
 
     return jsonify(HeatmapVisualization(X, y).clustered_data())
-
+    # return AnalysisSchema(many=True).jsonify(analyses)
 
 
 
@@ -410,8 +425,11 @@ def most_similar_diseases(id: int):
     top_5 = sorted(zip(names, sims), key=lambda x: x[1], reverse=True)[:5]
     return jsonify(dict(top_5))
 
+
 @app.route('/analysis/<type>')
 def analysis_details(type):
+    print('reached')
+    idss = [] # for expanding menu
     data = Dataset.query.all()
     returned_data = []
     for item in data:
@@ -422,13 +440,16 @@ def analysis_details(type):
             analysis_data = []
             for analysis in analyses:
                 analysis_data.append({'id': analysis[0], 'name': analysis[1]})
+                idss.append({'id':analysis[0]})
             returned_data.append({
                 'id': item.id,
                 'name': item.name,
                 'analyses': analysis_data,
                 'method': method.name,
-                'disease': 'Breast Cancer'
+                'disease': 'Breast Cancer',
+                'id2':idss
             })
+    print(returned_data)
     return jsonify(returned_data)
 
 @app.route('/analysis/list')
