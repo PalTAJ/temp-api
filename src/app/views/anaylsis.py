@@ -121,8 +121,8 @@ def fva_analysis_public():
 
     counter = 1
     check_value = len(list(request.json['analysis'].keys()))
-    print(check_value)
-    print(counter)
+    # print(check_value)
+    # print(counter)
 
 
     user = User.query.filter_by(email='tajothman@std.sehir.edu.tr').first()
@@ -246,7 +246,7 @@ def direct_pathway_mapping():
 
 @app.route('/analysis/direct-pathway-mapping/public', methods=['GET', 'POST'])
 def direct_pathway_mapping2():
-    print(request.json)
+    # print(request.json)
     (data, error) = AnalysisInputSchema2().load(request.json)
     if error:
         return jsonify(error), 400
@@ -317,27 +317,6 @@ def direct_pathway_mapping2():
 
 ###############################################################################
 ###############################################################################
-
-# @app.route('/analysis/set', methods=['POST'])
-# def user_analysis_set():
-#     """
-#     List of analysis of user
-#     ---
-#     tags:
-#         - analysis
-#     parameters:
-#         -
-#           name: authorization
-#           in: header
-#           type: string
-#           required:
-#     """
-    # data = request.json['data']
-    # analyses = Analysis.get_multiple(data.values())
-    # X = [i.results_pathway for i in analyses]
-    # y = [i.name for i in analyses]
-    # return AnalysisSchema(many=True).jsonify(analyses)
-
 
 @app.route('/analysis/set', methods=['POST'])
 def user_analysis_set():
@@ -428,7 +407,7 @@ def most_similar_diseases(id: int):
 
 @app.route('/analysis/<type>')
 def analysis_details(type):
-    print('reached')
+    # print('reached')
     idss = [] # for expanding menu
     data = Dataset.query.all()
     returned_data = []
@@ -449,7 +428,7 @@ def analysis_details(type):
                 'disease': 'Breast Cancer',
                 'id2':idss
             })
-    print(returned_data)
+    # print(returned_data)
     return jsonify(returned_data)
 
 @app.route('/analysis/list')
@@ -540,87 +519,20 @@ def search_analysis_by_change():
     for analysis in analyses:
         temp_data.setdefault(analysis.dataset_id, [])
         temp_data[analysis.dataset_id].append((analysis.id, analysis.name))
-    returned_data = []
+    returned_data = {}
+    c = 0
     for item in temp_data:
         study = Dataset.query.get(item)
         method = Method.query.get(study.method_id)
-        analysis_data = []
         for (id, name) in temp_data[item]:
-            analysis_data.append({'id': id, 'name': name})
-        returned_data.append({
-            'id': study.id,
-            'name': study.name,
-            'analyses': analysis_data,
-            'method': method.name
-        })
-    return jsonify(returned_data)
-    # return AnalysisSchema(many=True).jsonify(
-    #     Analysis.query.filter_by_change_many(data)
-    #     .filter_by_change_amount_many(data).filter_by_authentication()
-    #     .with_entities(Analysis.id, Analysis.name))
+            returned_data[c] = {'anlysisId':study.id, 'name': study.name, 'case': id ,"method":method.name}
+        c+=1
+
+    return returned_data
 
 
-# @app.route('/analysis/direct-pathway-mapping', methods=['GET', 'POST'])
-# @jwt_required()
-# def direct_pathway_mapping():
-#
-#     (data, error) = AnalysisInputSchema().load(request.json)
-#     if error:
-#         return jsonify(error), 400
-#     if not request.json:
-#         return "", 404
-#
-#     user = User.query.filter_by(email=str(current_identity)).first()
-#
-#     disease = Disease.query.get(request.json['disease'])
-#     study = Dataset(
-#         name=request.json['study_name'],
-#         method_id=2,
-#         status=True,
-#         group=request.json["group"],
-#         disease_id=disease.id,
-#         disease=disease)
-#     db.session.add(study)
-#     db.session.commit()
-#
-#     for key,value in request.json["analysis"].items():  # user as key, value {metaboldata , label}
-#         metabolomics_data = MetabolomicsData(
-#             metabolomics_data = value["Metabolites"],
-#             owner_email = str(user),
-#             is_public = True if request.json['public'] else False
-#         )
-#         metabolomics_data.disease_id = disease.id
-#         metabolomics_data.disease = disease
-#         db.session.add(metabolomics_data)
-#         db.session.commit()
-#
-#         analysis = Analysis(name =key, user = user)
-#         analysis.label = value['Label']
-#         analysis.name = key
-#         # analysis.status = True
-#         analysis.type = 'public' if request.json['public'] else "private"
-#         analysis.start_time = datetime.datetime.now()
-#         analysis.end_time = datetime.datetime.now()
-#
-#         analysis.owner_user_id = user.id
-#         analysis.owner_email = user.email
-#
-#         analysis.metabolomics_data_id = metabolomics_data.id
-#         analysis.dataset_id = study.id
-#         analysis_runs = DirectPathwayMapping(value["Metabolites"])  # Forming the instance
-#         # fold_changes
-#         analysis_runs.run()  # Making the analysis
-#         analysis.results_pathway = [analysis_runs.result_pathways]
-#         analysis.results_reaction = [analysis_runs.result_reactions]
-#
-#         db.session.add(analysis)
-#         db.session.commit()
-#
-#
-#
-#     analysis_id = analysis.id
-#     return jsonify({'id': analysis.id})
-#     # return ({1:1})
+
+
 
 @app.route('/diseases/all', methods=['GET', 'POST'])
 def get_diseases():
@@ -636,47 +548,51 @@ def get_diseases():
 
 
 ############################################################# test parts - not ready
-# @app.route('/analysis/search-by-metabol', methods=['POST'])
-# def search_analysis_by_metabol():
-#     """
-#     Search query in db
-#     ---
-#     tags:
-#         - analysis
-#     parameters:
-#         -
-#           name: query
-#           in: url
-#           type: string
-#           required: true
-#     """
-#     filtered_ids = []
-#
-#     metabolite_name = "acmana_c"
-#     metabolite_measurment = 10246.0
-#
-#     change = "+"## represent up to
-#     # change = "-" ## represents at least
-#     # change = "=" ## represents around -10/+10
-#
-#     ids = db.session.query(MetabolomicsData.id).all()
-#     for i in ids:  # loop over the Ids
-#         data = MetabolomicsData.query.filter_by(id=i[0]).first();
-#         data2 = data.id  # access a single id values
-#         data3 = MetabolomicsData.query.filter_by(id=data2).first();
-#         metabolites_data = data3.metabolomics_data
-#         if metabolite_name in list(metabolites_data) :
-#             if change == "+" and metabolites_data[metabolite_name] <= metabolite_measurment:
-#                 # print (i[0],metabolites_data[metabolite_name])
-#                 filtered_ids.append(i[0])
-#             elif change == "-" and metabolites_data[metabolite_name] >= metabolite_measurment:
-#                 # print (i[0],metabolites_data[metabolite_name])
-#                 filtered_ids.append(i[0])
-#             elif change == "=" and metabolites_data[metabolite_name] < metabolite_measurment+11 and metabolites_data[metabolite_name] > metabolite_measurment-11 :
-#                 # print (i[0],metabolites_data[metabolite_name])
-#                 filtered_ids.append(i[0])
-#
-#     return ({"1":filtered_ids})
+@app.route('/analysis/search-by-metabol', methods=['POST'])
+def search_analysis_by_metabol():
+    """
+    Search query in db
+    ---
+    tags:
+        - analysis
+    parameters:
+        -
+          name: query
+          in: url
+          type: string
+          required: true
+    """
+    filtered_ids = {}
+    c = 0
+    metabolite_name = request.json["metabol"]
+    # print(metabolite_name)
+    # metabolite_name = "C01507_c"
+    # metabolite_measurment = 10246.0
+
+    # change = "+"## represent up to
+    # change = "-" ## represents at least
+    # change = "=" ## represents around -10/+10
+
+    ids = db.session.query(MetabolomicsData.id).all()
+    for i in ids:  # loop over the Ids
+        data = MetabolomicsData.query.filter_by(id=i[0]).first();
+        metabolites_data = data.metabolomics_data
+        if metabolite_name in list(metabolites_data) :
+            analysis = Analysis.query.filter_by(metabolomics_data_id=i[0]).first();
+            temp = {"anlysisId":analysis.dataset.id,'study':analysis.dataset.name,"method":analysis.dataset.method.name,'case':analysis.metabolomics_data_id,'name':metabolite_name}
+            filtered_ids[c] = temp
+            c+=1
+    # print(filtered_ids)
+
+    return (filtered_ids)
+
+# if change == "+" and metabolites_data[metabolite_name] <= metabolite_measurment:
+#     # print (i[0],metabolites_data[metabolite_name])
+#     filtered_ids.append(i[0])
+# elif change == "-" and metabolites_data[metabolite_name] >= metabolite_measurment:
+#     # print (i[0],metabolites_data[metabolite_name])
+#     filtered_ids.append(i[0])
+# elif change == "=" and metabolites_data[metabolite_name] < metabolite_measurment+11 and metabolites_data[metabolite_name] > metabolite_measurment-11 :
 
 
 # ////////////////// not finished
