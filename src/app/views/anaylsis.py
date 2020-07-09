@@ -61,6 +61,9 @@ def fva_analysis():
     if not request.json:
         return "", 404
 
+    data = checkMapped(data)
+
+
     user = User.query.filter_by(email=str(current_identity)).first()
     #
     disease = Disease.query.get(request.json['disease'])
@@ -73,7 +76,7 @@ def fva_analysis():
     db.session.add(study)
     db.session.commit()
     #
-    for key,value in request.json["analysis"].items():  # user as key, value {metaboldata , label}
+    for key,value in data["analysis"].items():  # user as key, value {metaboldata , label}
         metabolomics_data = MetabolomicsData(
             metabolomics_data = value["Metabolites"],
             owner_email = str(user),
@@ -124,6 +127,7 @@ def fva_analysis_public():
     # print(check_value)
     # print(counter)
 
+    data = checkMapped(data)
 
     user = User.query.filter_by(email='tajothman@std.sehir.edu.tr').first()
 
@@ -139,7 +143,7 @@ def fva_analysis_public():
     db.session.commit()
 
     #
-    for key, value in request.json["analysis"].items():  # user as key, value {metaboldata , label}
+    for key, value in data["analysis"].items():  # user as key, value {metaboldata , label}
         metabolomics_data = MetabolomicsData(
             metabolomics_data=value["Metabolites"],
             owner_email=request.json["email"],
@@ -188,20 +192,22 @@ def direct_pathway_mapping():
     if not request.json:
         return "", 404
 
+    data = checkMapped(data)
+
     user = User.query.filter_by(email=str(current_identity)).first()
 
     disease = Disease.query.get(request.json['disease'])
     study = Dataset(
-        name=request.json['study_name'],
+        name=data['study_name'],
         method_id=2,
         status=True,
-        group=request.json["group"],
+        group=data["group"],
         disease_id=disease.id,
         disease=disease)
     db.session.add(study)
     db.session.commit()
 
-    for key,value in request.json["analysis"].items():  # user as key, value {metaboldata , label}
+    for key,value in data["analysis"].items():  # user as key, value {metaboldata , label}
         metabolomics_data = MetabolomicsData(
             metabolomics_data = value["Metabolites"],
             owner_email = str(user),
@@ -253,14 +259,16 @@ def direct_pathway_mapping2():
     if not request.json:
         return "", 404
 
+
+    data = checkMapped(data)
     user = User.query.filter_by(email='tajothman@std.sehir.edu.tr').first()
 
     disease = Disease.query.get(request.json['disease'])
     study = Dataset(
-        name=request.json['study_name'],
+        name=data['study_name'],
         method_id=2,
         status=True,
-        group=request.json["group"],
+        group=data["group"],
         disease_id=disease.id,
         disease=disease)
     db.session.add(study)
@@ -268,7 +276,8 @@ def direct_pathway_mapping2():
 
 
 
-    for key,value in request.json["analysis"].items():  # user as key, value {metaboldata , label}
+
+    for key,value in data["analysis"].items():  # user as key, value {metaboldata , label}
         metabolomics_data = MetabolomicsData(
             metabolomics_data = value["Metabolites"],
             owner_email = str(user),
@@ -547,7 +556,7 @@ def get_diseases():
     return jsonify(returned_data)
 
 
-############################################################# test parts - not ready
+############################################################# deployed but new
 @app.route('/analysis/search-by-metabol', methods=['POST'])
 def search_analysis_by_metabol():
     """
@@ -595,31 +604,39 @@ def search_analysis_by_metabol():
 # elif change == "=" and metabolites_data[metabolite_name] < metabolite_measurment+11 and metabolites_data[metabolite_name] > metabolite_measurment-11 :
 
 
-# ////////////////// not finished
+################## New
+def checkMapped(data):
+    '''
 
-# @app.route('/id')
-# def ids():
-#     # analysis = Analysis.query.get(id)
-#     # metabolomics_data = MetabolomicsData.query.get(analysis.metabolomics_data_id)
-#     # study = Dataset.query.get(analysis.dataset_id)
-#     # method = Method.query.get(study.method_id)
-#     # data = {
-#     #     'case_name': analysis.name,
-#     #     'status': study.status,
-#     #     'results_pathway': analysis.results_pathway,
-#     #     'results_reaction': analysis.results_reaction,
-#     #     'method': method.name,
-#     #     'fold_changes': metabolomics_data.metabolomics_data,
-#     #     'study_name': study.name,
-#     #     'analyses': []
-#     # }
-#     # analyses = Analysis.query.filter_by(dataset_id=study.id)
-#     # for analysis in analyses:
-#     #     data['analyses'].append({
-#     #         'id': analysis.id,
-#     #         'name': analysis.name
-#     #     })
-#     # # print(jsonify(data))
-#     return jsonify({"TAJ":1.000})
+    :param data: our data strcuture for multi cases inputs
+    :return: same data strcuture but removing the unmapped metabolites
+    '''
+    print(data.keys())
+    output = {}
+    output['group'] = data['group']
+    output['study_name'] = data['study_name']
+    output['public'] = data['public']
+    output['disease'] = data['disease']
+    output['study_name'] = data['study_name']
+    if 'email' in data.keys():
+        output['email'] = data['email']
 
-############################################################# new parts (almost ready)
+
+
+    output.setdefault('analysis', {})
+
+    isMapped = data['isMapped']
+    for case in data['analysis'].keys():
+        temp = {}
+        metabolites = data['analysis'][case]['Metabolites']
+        label = data['analysis'][case]['Label']
+        temp['Label'] = label
+        temp.setdefault('Metabolites', {})
+
+        for i in metabolites.keys():
+            if i in isMapped and isMapped[i]['isMapped'] is True:
+                temp['Metabolites'][i] = metabolites[i]
+        output['analysis'][case] = temp
+
+    return output
+

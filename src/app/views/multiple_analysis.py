@@ -14,9 +14,7 @@ from ..dpm import *
 import datetime
 import mwtab
 from timeit import default_timer as timer
-
-
-
+import json
 
 
 ############################### Excel codes below
@@ -30,7 +28,7 @@ def excel():
     for k,v in new_data.items():
         processed_data['analysis'][k] = v
     # processed_data['analysis']
-    # print (processed_data)
+    #print (processed_data)
     return jsonify(processed_data)
 
 
@@ -40,10 +38,46 @@ def metabolc(data):
     this function takes data from excel sheet and return a list of metabolites in the sheet
     """
     metabols = []
+    mapping_metabolites = {}
+    isMapped = {}
+
+    mapping_data = open("../datasets/assets/mapping_all.txt", "r+").readlines()
+    for line in mapping_data:
+        tempo = line.split(",")
+        mapping_metabolites[tempo[0].strip()] = tempo[1].strip()
+
+    with open('../datasets/assets/recon2.json') as f:
+        mapping_data1= json.load(f)
+        mapping_data1 = mapping_data1["metabolites"]
+
+    with open('../datasets/assets/synonyms_v.0.4.json') as f:
+        mapping_data2= json.load(f)
+
+
+
+
     for k in range(1, len(data), 1):
         if len(data[k]) > 0:
-            metabols.append(data[k][0])
-    return metabols
+
+            if data[k][0] in mapping_data1.keys():
+                metabols.append(data[k][0])
+                isMapped[data[k][0]] = {'isMapped':True}
+
+            elif data[k][0] in mapping_data2.keys():
+                metabols.append(mapping_data2[data[k][0]])
+                isMapped[mapping_data2[data[k][0]]] = {'isMapped': True}
+
+            elif data[k][0] in mapping_metabolites.keys():
+                metabols.append(mapping_metabolites[data[k][0]])
+                isMapped[mapping_metabolites[data[k][0]]] = {'isMapped': True}
+
+            else:
+                metabols.append(data[k][0])
+                isMapped[data[k][0]] = {'isMapped':False}
+
+
+
+    return [metabols,isMapped]
 
 
 
@@ -73,8 +107,7 @@ def user_metabol(data):
             temp2.append(row[value])
 
         user_metabolites[id] = temp2
-    # for k,v in user_metabolites.items():
-    #     print (k,v)
+
     return user_metabolites
 
 
@@ -88,46 +121,23 @@ def excel_data_Prpcessing(data, meta):
     study_name = meta_data[0]
     group_control_label = meta_data[1]
     users_labels = meta_data[2]
-    mapping_metabolites = {}
-    blacklist = []
 
-    mapping_data = open("../datasets/assets/mapping_all.txt", "r+").readlines()
-    for line in mapping_data:
-        tempo = line.split(",")
-        mapping_metabolites[tempo[0].strip()] = tempo[1].strip()
-    # print(list(mapping_metabolites.keys()))
-    keyss = list(mapping_metabolites.keys())
-    valuess = list(mapping_metabolites.values())
+
 
     users_metabolite = {}
     data2 = user_metabol(data)
-    metabol = metabolc(data)
+    metabol,isMapped = metabolc(data)
 
     for key, value in data2.items():
         temp = {}
         for index_metas in range(0, len(value), 1):
             temp[metabol[index_metas]] =  value[index_metas]
+
         users_metabolite[key] = {"Metabolites": temp, "Label": users_labels[key]}
     #
     processed_users_data = {"study_name": study_name, "group": group_control_label,
-                            "analysis": users_metabolite}
+                            "analysis": users_metabolite,'isMapped':isMapped}
 
-    notFiltered = list(processed_users_data["analysis"][list(processed_users_data["analysis"].keys())[0]]["Metabolites"].keys())
-    for name in notFiltered:
-        if name not in keyss:
-            if name not in valuess:
-                blacklist.append(name)
-
-
-    input_keys = list(processed_users_data["analysis"].keys())
-    for case in input_keys:
-        temp_metabols = processed_users_data["analysis"][case]["Metabolites"]
-        for blacklisted in blacklist:
-            if blacklisted in list(temp_metabols.keys()):
-                # print (blacklisted)
-                del processed_users_data["analysis"][case]["Metabolites"][blacklisted]
-
-    processed_users_data["blacklist"] = blacklist
     return processed_users_data
 
 
@@ -249,10 +259,21 @@ def mwlab_mapper():
     mapping_metabolites = {}
     mapping_data = databaseProccesing(name)  ## dictionary or 0
     if mapping_data != 0:
+
         data = open("../datasets/assets/mapping_all.txt","r+").readlines()
         for line in data:
             tempo = line.split(",")
             mapping_metabolites[tempo[0]]=tempo[1]
+
+        isMapped = {}
+
+
+        with open('../datasets/assets/recon2.json') as f:
+            mapping_data1 = json.load(f)
+            mapping_data1 = mapping_data1["metabolites"]
+
+        with open('../datasets/assets/synonyms_v.0.4.json') as f:
+            mapping_data2 = json.load(f)
 
         local = mwtabReader(name)
         measurments_data= local[0]
@@ -264,29 +285,34 @@ def mwlab_mapper():
             temp_dict = {}
             for metabol_name2,id in mapping_data[temp].items():
                 for metabol_name1 , measurment in metabols_data.items():
-                    if metabol_name1 == metabol_name2 and id in mapping_metabolites.keys():
-                        # liste.append([mapping_metabolites[id].strip(),float(measurment)])
-                        temp_dict[mapping_metabolites[id].strip()]=float(measurment)
-                    else:
-                        blacklist.append(metabol_name1)
+                    if metabol_name1 == metabol_name2:
+
+                        if id in mapping_metabolites.keys():
+                            temp_dict[mapping_metabolites[id].strip()]=float(measurment)
+                            isMapped[mapping_metabolites[id]] = {'isMapped':True}
+
+                        elif id in mapping_data1.keys():
+                            temp_dict[id]=float(measurment)
+                            isMapped[id] = {'isMapped':True}
+
+                        elif id in mapping_data2.keys():
+                            temp_dict[mapping_data2[id]] =float(measurment)
+                            isMapped[mapping_data2[id]] = {'isMapped':True}
+                        else:
+                            temp_dict[id]=float(measurment)
+                            isMapped[id] = {'isMapped':False}
+
+
+
 
             mapped[sample] = {"Metabolites": temp_dict, "Label": "not_provided"}
-        # print ({"study_name":study_name,"analysis":mapped,"group":"None"})
-        # print(len(blacklist))
-        # print(blacklist)
-        final = {"study_name":study_name,"analysis":mapped,"group":"not_provided","blacklist":blacklist}
+
+        final = {"study_name":study_name,"analysis":mapped,"group":"not_provided",'isMapped':isMapped}
         if len(list(final['analysis'].keys())) > 1:
             new_data = group_avg(final,2)
             for k2, v2 in new_data.items():
                 final['analysis'][k2] = v2
         return (final)
-
-
-    ########3
-
-
-
-
 
     else:
         return ({1:"Error"})
@@ -331,7 +357,6 @@ def group_avg(sample_data3,checker=1):
     if len(list(labels_case.keys())) > 1:
         # print(labels_case)
         # print(list(labels_case.keys()))
-        print("ok")
         for key,value in labels_case.items():
             metabolites = []
             for m1 in value:
@@ -346,25 +371,10 @@ def group_avg(sample_data3,checker=1):
                     label_cases_avg[i[0]].append(i[1])
 
             final.append([str(key)+" label avg",label_cases_avg])
-            print(final)
 
 
 
-        # else:
-        #     pass
-            # for key,value in labels_case.items():
-            #     metabolites = []
-            #     for m1 in value:
-            #         for k2,v2  in m1.items():
-            #             metabolites.append([k2,v2])
-            #     label_cases_avg = {}
-            #     for i in metabolites:
-            #         if i[0] not in list(label_cases_avg.keys()):
-            #             label_cases_avg.setdefault(i[0],[])
-            #             label_cases_avg[i[0]].append(i[1])
-            #         elif i[0] in list(label_cases_avg.keys()):
-            #             label_cases_avg[i[0]].append(i[1])
-            # final.append([str(key)+" label avg",label_cases_avg])
+
 
     final.append(["Group Avg",labels])
     final_combined = average(final)
