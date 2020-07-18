@@ -66,45 +66,54 @@ def fva_analysis():
 
     user = User.query.filter_by(email=str(current_identity)).first()
     #
-    disease = Disease.query.get(request.json['disease'])
-    study = Dataset(
-        name=request.json['study_name'],
-        method_id=1,
-        group=request.json["group"],
-        disease_id=disease.id,
-        disease=disease)
-    db.session.add(study)
-    db.session.commit()
-    #
-    for key,value in data["analysis"].items():  # user as key, value {metaboldata , label}
-        metabolomics_data = MetabolomicsData(
-            metabolomics_data = value["Metabolites"],
-            owner_email = str(user),
-            is_public = True if request.json['public'] else False
-        )
 
-        metabolomics_data.disease_id = disease.id
-        metabolomics_data.disease = disease
-        db.session.add(metabolomics_data)
+    if len(data['analysis']) == 0:
+        return jsonify({'id': 'mapping_error'})
+
+    else:
+
+        disease = Disease.query.get(request.json['disease'])
+        study = Dataset(
+            name=request.json['study_name'],
+            method_id=1,
+            group=request.json["group"],
+            disease_id=disease.id,
+            disease=disease)
+        db.session.add(study)
         db.session.commit()
 
+        analysis_id = 0
+        for key,value in data["analysis"].items():  # user as key, value {metaboldata , label}
+            if len(value['Metabolites']) > 0:
+                metabolomics_data = MetabolomicsData(
+                    metabolomics_data = value["Metabolites"],
+                    owner_email = str(user),
+                    is_public = True if request.json['public'] else False
+                )
 
-        analysis = Analysis(name=key, user=user)
-        analysis.name = key
-        analysis.type = 'public' if request.json['public'] else "private"
-        analysis.start_time = datetime.datetime.now()
+                metabolomics_data.disease_id = disease.id
+                metabolomics_data.disease = disease
+                db.session.add(metabolomics_data)
+                db.session.commit()
 
 
-        analysis.owner_user_id = user.id
-        analysis.owner_email = user.email
-        analysis.metabolomics_data_id = metabolomics_data.id
-        analysis.dataset_id = study.id
+                analysis = Analysis(name=key, user=user)
+                analysis.name = key
+                analysis.type = 'public' if request.json['public'] else "private"
+                analysis.start_time = datetime.datetime.now()
 
-        db.session.add(analysis)
-        db.session.commit()
-        save_analysis.delay(analysis.id, value["Metabolites"])
 
-    return jsonify({'id': analysis.id})
+                analysis.owner_user_id = user.id
+                analysis.owner_email = user.email
+                analysis.metabolomics_data_id = metabolomics_data.id
+                analysis.dataset_id = study.id
+
+                db.session.add(analysis)
+                db.session.commit()
+                save_analysis.delay(analysis.id, value["Metabolites"])
+                analysis_id = analysis.id
+
+        return jsonify({'id': analysis_id})
 
 
 
@@ -130,53 +139,60 @@ def fva_analysis_public():
     data = checkMapped(data)
 
     user = User.query.filter_by(email='tajothman@std.sehir.edu.tr').first()
+    if len(data['analysis']) == 0:
+        return jsonify({'id': 'mapping_error'})
+
+    else:
 
 
-    disease = Disease.query.get(request.json['disease'])
-    study = Dataset(
-        name=request.json['study_name'],
-        method_id=1,
-        group=request.json["group"],
-        disease_id=disease.id,
-        disease=disease)
-    db.session.add(study)
-    db.session.commit()
+        disease = Disease.query.get(request.json['disease'])
+        study = Dataset(
+            name=request.json['study_name'],
+            method_id=1,
+            group=request.json["group"],
+            disease_id=disease.id,
+            disease=disease)
+        db.session.add(study)
+        db.session.commit()
 
     #
-    for key, value in data["analysis"].items():  # user as key, value {metaboldata , label}
-        metabolomics_data = MetabolomicsData(
-            metabolomics_data=value["Metabolites"],
-            owner_email=request.json["email"],
-            is_public=True
-        )
+        for key, value in data["analysis"].items():  # user as key, value {metaboldata , label}
+            if len(value['Metabolites']) > 0:
+                check_value =-1
 
-        metabolomics_data.disease_id = disease.id
-        metabolomics_data.disease = disease
-        db.session.add(metabolomics_data)
-        db.session.commit()
+                metabolomics_data = MetabolomicsData(
+                    metabolomics_data=value["Metabolites"],
+                    owner_email=request.json["email"],
+                    is_public=True
+                )
 
-        analysis = Analysis(name=key, user=user)
-        analysis.name = key
-        analysis.type = 'public'
-        analysis.start_time = datetime.datetime.now()
+                metabolomics_data.disease_id = disease.id
+                metabolomics_data.disease = disease
+                db.session.add(metabolomics_data)
+                db.session.commit()
 
-        analysis.owner_user_id = user.id
-        analysis.owner_email = request.json["email"]
-        analysis.metabolomics_data_id = metabolomics_data.id
-        analysis.dataset_id = study.id
+                analysis = Analysis(name=key, user=user)
+                analysis.name = key
+                analysis.type = 'public'
+                analysis.start_time = datetime.datetime.now()
 
-        db.session.add(analysis)
-        db.session.commit()
+                analysis.owner_user_id = user.id
+                analysis.owner_email = request.json["email"]
+                analysis.metabolomics_data_id = metabolomics_data.id
+                analysis.dataset_id = study.id
 
-        if check_value == counter:
-            save_analysis.delay(analysis.id, value["Metabolites"],registered=False,mail=request.json["email"],study2=request.json['study_name'])
-        else:
-            counter+=1
-            save_analysis.delay(analysis.id, value["Metabolites"])
+                db.session.add(analysis)
+                db.session.commit()
+
+                if check_value == counter:
+                    save_analysis.delay(analysis.id, value["Metabolites"],registered=False,mail=request.json["email"],study2=request.json['study_name'])
+                else:
+                    counter+=1
+                    save_analysis.delay(analysis.id, value["Metabolites"])
 
 
-    return jsonify({'id': analysis.id})
-    # return jsonify({1:1})
+        return jsonify({'id': analysis.id})
+        # return jsonify({1:1})
 
 
 
@@ -196,54 +212,64 @@ def direct_pathway_mapping():
 
     user = User.query.filter_by(email=str(current_identity)).first()
 
-    disease = Disease.query.get(request.json['disease'])
-    study = Dataset(
-        name=data['study_name'],
-        method_id=2,
-        status=True,
-        group=data["group"],
-        disease_id=disease.id,
-        disease=disease)
-    db.session.add(study)
-    db.session.commit()
+    if len(data['analysis']) == 0:
+        return jsonify({'id': 'mapping_error'})
 
-    for key,value in data["analysis"].items():  # user as key, value {metaboldata , label}
-        metabolomics_data = MetabolomicsData(
-            metabolomics_data = value["Metabolites"],
-            owner_email = str(user),
-            is_public = True if request.json['public'] else False
-        )
-        metabolomics_data.disease_id = disease.id
-        metabolomics_data.disease = disease
-        db.session.add(metabolomics_data)
+    else:
+
+
+        disease = Disease.query.get(request.json['disease'])
+        study = Dataset(
+            name=data['study_name'],
+            method_id=2,
+            status=True,
+            group=data["group"],
+            disease_id=disease.id,
+            disease=disease)
+        db.session.add(study)
         db.session.commit()
+        analysis_id = 0
+        for key,value in data["analysis"].items():  # user as key, value {metaboldata , label}
 
-        analysis = Analysis(name =key, user = user)
-        analysis.label = value['Label']
-        analysis.name = key
-        # analysis.status = True
-        analysis.type = 'public' if request.json['public'] else "private"
-        analysis.start_time = datetime.datetime.now()
-        analysis.end_time = datetime.datetime.now()
+            if len(value['Metabolites']) > 0:
 
-        analysis.owner_user_id = user.id
-        analysis.owner_email = user.email
+                metabolomics_data = MetabolomicsData(
+                    metabolomics_data = value["Metabolites"],
+                    owner_email = str(user),
+                    is_public = True if request.json['public'] else False
+                )
 
-        analysis.metabolomics_data_id = metabolomics_data.id
-        analysis.dataset_id = study.id
-        analysis_runs = DirectPathwayMapping(value["Metabolites"])  # Forming the instance
-        # fold_changes
-        analysis_runs.run()  # Making the analysis
-        analysis.results_pathway = [analysis_runs.result_pathways]
-        analysis.results_reaction = [analysis_runs.result_reactions]
+                metabolomics_data.disease_id = disease.id
+                metabolomics_data.disease = disease
+                db.session.add(metabolomics_data)
+                db.session.commit()
 
-        db.session.add(analysis)
-        db.session.commit()
+                analysis = Analysis(name =key, user = user)
+                analysis.label = value['Label']
+                analysis.name = key
+                # analysis.status = True
+                analysis.type = 'public' if request.json['public'] else "private"
+                analysis.start_time = datetime.datetime.now()
+                analysis.end_time = datetime.datetime.now()
+
+                analysis.owner_user_id = user.id
+                analysis.owner_email = user.email
+
+                analysis.metabolomics_data_id = metabolomics_data.id
+                analysis.dataset_id = study.id
+                analysis_runs = DirectPathwayMapping(value["Metabolites"])  # Forming the instance
+                # fold_changes
+                analysis_runs.run()  # Making the analysis
+                analysis.results_pathway = [analysis_runs.result_pathways]
+                analysis.results_reaction = [analysis_runs.result_reactions]
+
+                db.session.add(analysis)
+                db.session.commit()
+                analysis_id = analysis.id
 
 
 
-    analysis_id = analysis.id
-    return jsonify({'id': analysis.id})
+        return jsonify({'id': analysis_id})
 
 
 
@@ -262,62 +288,63 @@ def direct_pathway_mapping2():
 
     data = checkMapped(data)
     user = User.query.filter_by(email='tajothman@std.sehir.edu.tr').first()
+    if len(data['analysis']) == 0:
+        return jsonify({'id':'mapping_error'})
 
-    disease = Disease.query.get(request.json['disease'])
-    study = Dataset(
-        name=data['study_name'],
-        method_id=2,
-        status=True,
-        group=data["group"],
-        disease_id=disease.id,
-        disease=disease)
-    db.session.add(study)
-    db.session.commit()
-
-
-
-
-    for key,value in data["analysis"].items():  # user as key, value {metaboldata , label}
-        metabolomics_data = MetabolomicsData(
-            metabolomics_data = value["Metabolites"],
-            owner_email = str(user),
-            is_public = True
-        )
-        metabolomics_data.disease_id = disease.id
-        metabolomics_data.disease = disease
-        db.session.add(metabolomics_data)
+    else:
+        disease = Disease.query.get(request.json['disease'])
+        study = Dataset(
+            name=data['study_name'],
+            method_id=2,
+            status=True,
+            group=data["group"],
+            disease_id=disease.id,
+            disease=disease)
+        db.session.add(study)
         db.session.commit()
 
-        analysis = Analysis(name =key, user = user)
-        analysis.label = value['Label']
-        analysis.name = key
-        # analysis.status = True
-        analysis.type = 'public'
-        analysis.start_time = datetime.datetime.now()
-        analysis.end_time = datetime.datetime.now()
+        analysis_id = 0
+        for key,value in data["analysis"].items():  # user as key, value {metaboldata , label}
 
-        analysis.owner_user_id = user.id
-        analysis.owner_email = request.json["email"]
+            if len(value['Metabolites']) > 0:
+                metabolomics_data = MetabolomicsData(
+                    metabolomics_data = value["Metabolites"],
+                    owner_email = str(user),
+                    is_public = True
+                )
+                print('ok')
 
-        analysis.metabolomics_data_id = metabolomics_data.id
-        analysis.dataset_id = study.id
-        analysis_runs = DirectPathwayMapping(value["Metabolites"])  # Forming the instance
-        # fold_changes
-        analysis_runs.run()  # Making the analysis
-        analysis.results_pathway = [analysis_runs.result_pathways]
-        analysis.results_reaction = [analysis_runs.result_reactions]
+                metabolomics_data.disease_id = disease.id
+                metabolomics_data.disease = disease
+                db.session.add(metabolomics_data)
+                db.session.commit()
 
-        db.session.add(analysis)
-        db.session.commit()
+                analysis = Analysis(name =key, user = user)
+                analysis.label = value['Label']
+                analysis.name = key
+                # analysis.status = True
+                analysis.type = 'public'
+                analysis.start_time = datetime.datetime.now()
+                analysis.end_time = datetime.datetime.now()
 
+                analysis.owner_user_id = user.id
+                analysis.owner_email = request.json["email"]
 
+                analysis.metabolomics_data_id = metabolomics_data.id
+                analysis.dataset_id = study.id
+                analysis_runs = DirectPathwayMapping(value["Metabolites"])  # Forming the instance
+                # fold_changes
+                analysis_runs.run()  # Making the analysis
+                analysis.results_pathway = [analysis_runs.result_pathways]
+                analysis.results_reaction = [analysis_runs.result_reactions]
 
-    analysis_id = analysis.id
-    message = 'Hello, \n you can find your analysis results in the following link: \n http://metabolitics.biodb.sehir.edu.tr/past-analysis/' + str(
-        analysis_id)
-    send_mail( request.json["email"], request.json['study_name'] + ' Analysis Results', message)
-    return jsonify({'id': analysis.id})
-    # return ({1:1})
+                db.session.add(analysis)
+                db.session.commit()
+                analysis_id = analysis.id
+
+        message = 'Hello, \n you can find your analysis results in the following link: \n http://metabolitics.biodb.sehir.edu.tr/past-analysis/' + str(analysis_id)
+        send_mail( request.json["email"], request.json['study_name'] + ' Analysis Results', message)
+        return jsonify({'id': analysis_id})
 
 
 
@@ -611,7 +638,7 @@ def checkMapped(data):
     :param data: our data strcuture for multi cases inputs
     :return: same data strcuture but removing the unmapped metabolites
     '''
-    print(data.keys())
+    # print(data.keys())
     output = {}
     output['group'] = data['group']
     output['study_name'] = data['study_name']
@@ -636,7 +663,13 @@ def checkMapped(data):
         for i in metabolites.keys():
             if i in isMapped and isMapped[i]['isMapped'] is True:
                 temp['Metabolites'][i] = metabolites[i]
-        output['analysis'][case] = temp
+        # print(len(temp['Metabolites']))
+        if len(temp['Metabolites']) > 0:
+            output['analysis'][case] = temp
+
+    # {'public': True, 'analysis': {'NIDDK1': {'Label': 'not_provided', 'Metabolites': {}}},
+    #  'study_name': 'LIPID MAPS Lipidomics studies', 'group': 'not_provided', 'email': 'tajothman@std.sehir.edu.tr',
+    #  'disease': 147}
 
     return output
 
