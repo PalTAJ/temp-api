@@ -133,8 +133,7 @@ def fva_analysis_public():
 
     counter = 1
     check_value = len(list(request.json['analysis'].keys()))
-    # print(check_value)
-    # print(counter)
+
 
     data = checkMapped(data)
 
@@ -158,7 +157,7 @@ def fva_analysis_public():
     #
         for key, value in data["analysis"].items():  # user as key, value {metaboldata , label}
             if len(value['Metabolites']) > 0:
-                check_value =-1
+                check_value -=1
 
                 metabolomics_data = MetabolomicsData(
                     metabolomics_data=value["Metabolites"],
