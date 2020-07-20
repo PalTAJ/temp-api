@@ -13,7 +13,7 @@ class AnalysisInputSchema(Schema):
     # concentration_changes = fields.Dict(required=True)
     analysis = fields.Dict(required=True)
     group = fields.String(required=True)
-    isMapped = fields.Dict(required=True)
+    isMapped = fields.Dict(required=False)
     disease = fields.Integer(required=True)
 
 class AnalysisInputSchema2(Schema):
@@ -23,7 +23,7 @@ class AnalysisInputSchema2(Schema):
     analysis = fields.Dict(required=True)
     group = fields.String(required=True)
     disease = fields.Integer(required=True)
-    isMapped = fields.Dict(required=True)
+    isMapped = fields.Dict(required=False)
     email = fields.String(required=True)
 
 

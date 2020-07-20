@@ -637,7 +637,7 @@ def checkMapped(data):
     :param data: our data strcuture for multi cases inputs
     :return: same data strcuture but removing the unmapped metabolites
     '''
-    # print(data.keys())
+
     output = {}
     output['group'] = data['group']
     output['study_name'] = data['study_name']
@@ -647,28 +647,69 @@ def checkMapped(data):
     if 'email' in data.keys():
         output['email'] = data['email']
 
-
-
     output.setdefault('analysis', {})
 
-    isMapped = data['isMapped']
-    for case in data['analysis'].keys():
-        temp = {}
-        metabolites = data['analysis'][case]['Metabolites']
-        label = data['analysis'][case]['Label']
-        temp['Label'] = label
-        temp.setdefault('Metabolites', {})
+    if 'isMapped' in data.keys():
 
-        for i in metabolites.keys():
-            if i in isMapped and isMapped[i]['isMapped'] is True:
-                temp['Metabolites'][i] = metabolites[i]
-        # print(len(temp['Metabolites']))
-        if len(temp['Metabolites']) > 0:
-            output['analysis'][case] = temp
+        isMapped = data['isMapped']
+        for case in data['analysis'].keys():
+            temp = {}
+            metabolites = data['analysis'][case]['Metabolites']
+            label = data['analysis'][case]['Label']
+            temp['Label'] = label
+            temp.setdefault('Metabolites', {})
+
+            for i in metabolites.keys():
+                if i in isMapped and isMapped[i]['isMapped'] is True:
+                    temp['Metabolites'][i] = metabolites[i]
+            # print(len(temp['Metabolites']))
+            if len(temp['Metabolites']) > 0:
+                output['analysis'][case] = temp
 
     # {'public': True, 'analysis': {'NIDDK1': {'Label': 'not_provided', 'Metabolites': {}}},
     #  'study_name': 'LIPID MAPS Lipidomics studies', 'group': 'not_provided', 'email': 'tajothman@std.sehir.edu.tr',
     #  'disease': 147}
 
-    return output
+        return output
+    else:
+        mapping_metabolites = {}
+
+        # mapping_data = open("../datasets/assets/mapping_all.txt", "r+").readlines()
+        # for line in mapping_data:
+        #     tempo = line.split(",")
+        #     mapping_metabolites[tempo[0].strip()] = tempo[1].strip()
+        #
+        # with open('../datasets/assets/recon2.json') as f:
+        #     mapping_data1 = json.load(f)
+        #     mapping_data1 = mapping_data1["metabolites"]
+
+        with open('../datasets/assets/synonyms_v.0.4.json') as f:
+            mapping_data2 = json.load(f)
+
+        for case in data['analysis'].keys():
+            temp = {}
+            metabolites = data['analysis'][case]['Metabolites']
+            label = data['analysis'][case]['Label']
+            temp['Label'] = label
+            temp.setdefault('Metabolites', {})
+
+            for i in metabolites.keys():
+
+                if i in mapping_data2.keys():
+                    temp['Metabolites'][mapping_data2[i]] = metabolites[i]
+
+                # if i in mapping_data1.keys():
+                #     temp['Metabolites'][mapping_data1[i]] = metabolites[i]
+                #
+                # elif i in mapping_metabolites.keys():
+                #     temp['Metabolites'][mapping_metabolites[i]] = metabolites[i]
+
+            if len(temp['Metabolites']) > 0:
+                output['analysis'][case] = temp
+        print(output)
+        return output
+
+
+
+
 
