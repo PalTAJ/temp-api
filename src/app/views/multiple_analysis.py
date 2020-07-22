@@ -41,11 +41,11 @@ def metabolc(data):
     mapping_metabolites = {}
     isMapped = {}
 
-    mapping_data = open("../datasets/assets/mapping_all.txt", "r+").readlines()
-    for line in mapping_data:
-        tempo = line.split(",")
-        mapping_metabolites[tempo[0].strip()] = tempo[1].strip()
-
+    # mapping_data = open("../datasets/assets/mapping_all.txt", "r+").readlines()
+    # for line in mapping_data:
+    #     tempo = line.split(",")
+    #     mapping_metabolites[tempo[0].strip()] = tempo[1].strip()
+    #
     with open('../datasets/assets/recon2.json') as f:
         mapping_data1= json.load(f)
         mapping_data1 = mapping_data1["metabolites"]
@@ -67,9 +67,9 @@ def metabolc(data):
                 metabols.append(mapping_data2[data[k][0]])
                 isMapped[mapping_data2[data[k][0]]] = {'isMapped': True}
 
-            elif data[k][0] in mapping_metabolites.keys():
-                metabols.append(mapping_metabolites[data[k][0]])
-                isMapped[mapping_metabolites[data[k][0]]] = {'isMapped': True}
+            # elif data[k][0] in mapping_metabolites.keys():
+            #     metabols.append(mapping_metabolites[data[k][0]])
+            #     isMapped[mapping_metabolites[data[k][0]]] = {'isMapped': True}
 
             else:
                 metabols.append(data[k][0])
@@ -260,14 +260,14 @@ def mwlab_mapper():
     mapping_data = databaseProccesing(name)  ## dictionary or 0
     if mapping_data != 0:
 
-        data = open("../datasets/assets/mapping_all.txt","r+").readlines()
-        for line in data:
-            tempo = line.split(",")
-            mapping_metabolites[tempo[0]]=tempo[1]
-
+        # data = open("../datasets/assets/mapping_all.txt","r+").readlines()
+        # for line in data:
+        #     tempo = line.split(",")
+        #     mapping_metabolites[tempo[0]]=tempo[1]
+        #
         isMapped = {}
-
-
+        #
+        #
         with open('../datasets/assets/recon2.json') as f:
             mapping_data1 = json.load(f)
             mapping_data1 = mapping_data1["metabolites"]
@@ -287,11 +287,11 @@ def mwlab_mapper():
                 for metabol_name1 , measurment in metabols_data.items():
                     if metabol_name1 == metabol_name2:
 
-                        if id in mapping_metabolites.keys():
-                            temp_dict[mapping_metabolites[id].strip()]=float(measurment)
-                            isMapped[mapping_metabolites[id]] = {'isMapped':True}
-
-                        elif id in mapping_data1.keys():
+                        # if id in mapping_metabolites.keys():
+                        #     temp_dict[mapping_metabolites[id].strip()]=float(measurment)
+                        #     isMapped[mapping_metabolites[id]] = {'isMapped':True}
+                        #
+                        if id in mapping_data1.keys():
                             temp_dict[id]=float(measurment)
                             isMapped[id] = {'isMapped':True}
 

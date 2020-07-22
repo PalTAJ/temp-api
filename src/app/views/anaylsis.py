@@ -679,9 +679,9 @@ def checkMapped(data):
         #     tempo = line.split(",")
         #     mapping_metabolites[tempo[0].strip()] = tempo[1].strip()
         #
-        # with open('../datasets/assets/recon2.json') as f:
-        #     mapping_data1 = json.load(f)
-        #     mapping_data1 = mapping_data1["metabolites"]
+        with open('../datasets/assets/recon2.json') as f:
+            mapping_data1 = json.load(f)
+            mapping_data1 = mapping_data1["metabolites"]
 
         with open('../datasets/assets/synonyms_v.0.4.json') as f:
             mapping_data2 = json.load(f)
@@ -696,11 +696,13 @@ def checkMapped(data):
             for i in metabolites.keys():
 
                 if i in mapping_data2.keys():
-                    temp['Metabolites'][mapping_data2[i]] = metabolites[i]
+                    print(type(metabolites[i]))
+                    temp['Metabolites'][mapping_data2[i]] = float(str(metabolites[i]).strip())
 
-                # if i in mapping_data1.keys():
-                #     temp['Metabolites'][mapping_data1[i]] = metabolites[i]
-                #
+                if i in mapping_data1.keys():
+                    print(type(metabolites[i]))
+                    temp['Metabolites'][i] = float(str(metabolites[i]).strip())
+
                 # elif i in mapping_metabolites.keys():
                 #     temp['Metabolites'][mapping_metabolites[i]] = metabolites[i]
 
