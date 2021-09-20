@@ -9,7 +9,7 @@
 #     password = "E7kFKYjVnX"
 #     msg['From'] = "metaboliticsdb@gmail.com"
 #     #
-#     # password = "KEAnun39"
+#     # password = ""
 #     # msg['From'] = "tajsaleh96@gmail.com"
 #     msg['To'] = to
 #     msg['Subject'] = subject
