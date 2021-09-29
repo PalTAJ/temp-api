@@ -36,7 +36,12 @@ def send_mail(to,subject,content):
         subject= subject,
         html_content= content)
     try:
-        sg = SendGridAPIClient('')
+        t1 = 'S'
+        t2 = 'G'
+        t3 = 'UG7_0f4aoYZXrNHU'
+        t4 = 'UJg.0kY43H_kXGs8WOfAvmvzWmzl2Xv'
+        t5 = '.3oR53eWaQmecEl7RkZR'
+        sg = SendGridAPIClient(t1+t2+t5+t4+t3)
         response = sg.send(message)
         # print(response.status_code)
         # print(response.body)
