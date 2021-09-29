@@ -341,7 +341,7 @@ def direct_pathway_mapping2():
                 db.session.commit()
                 analysis_id = analysis.id
 
-        message = 'Hello, \n you can find your analysis results in the following link: \n http://metabolitics.biodb.sehir.edu.tr/past-analysis/' + str(analysis_id)
+        message = 'Hello, \n you can find your analysis results in the following link: \n http://metabolitics.itu.edu.tr/past-analysis/' + str(analysis_id)
         send_mail( request.json["email"], request.json['study_name'] + ' Analysis Results', message)
         return jsonify({'id': analysis_id})
 
