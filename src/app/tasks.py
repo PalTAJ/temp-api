@@ -32,7 +32,7 @@ def save_analysis(analysis_id, concentration_changes,registered=True,mail='none'
     db.session.commit()
 
     if registered != True:
-        message = 'Hello, \n you can find your analysis results in the following link: \n http://metabolitics.biodb.sehir.edu.tr/past-analysis/'+str(analysis_id)
+        message = 'Hello, \n you can find your analysis results in the following link: \n http://metabolitics.itu.edu.tr/past-analysis/'+str(analysis_id)
         send_mail(mail,study2+' Analysis Results',message)
 
 
