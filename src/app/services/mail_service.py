@@ -31,7 +31,7 @@ from sendgrid.helpers.mail import Mail
 
 def send_mail(to,subject,content):
     message = Mail(
-        from_email='metaboliticsdb@gmail.com',
+        from_email='metabolitics@itu.edu.tr',
         to_emails= to,
         subject= subject,
         html_content= content)
