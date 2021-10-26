@@ -159,24 +159,48 @@ def meta_data_processing(meta):
 
 ################################################### MWtab codes below
 
+
+def label_extraction(name):
+
+    results = {}
+
+    possible_keys = set(('Group','Treatment','Time Point'))
+    data = {}
+    for mwfile in mwtab.read_files(name[1]):
+        data = mwfile['SUBJECT_SAMPLE_FACTORS']
+
+    k = list(data[0]['Factors'].keys())[0]
+
+    for subject in data:
+        results[subject['Sample ID']] = subject['Factors'][k]
+
+    return results
+
 def mwtabReader(name):
 
     dicte = {}
     liste = []
     subjects_samples = 0
     value_filter = [0,"0","N",""," "]
-    mwfile = next(mwtab.read_files(name[0],name[1]))
-    study_title = mwfile["PROJECT"]["PROJECT_TITLE"]
-    measurment = mwfile["MS_METABOLITE_DATA"]["MS_METABOLITE_DATA_START"]["DATA"]
+
+    # AN003104
+    # AN000005
+    # AN000011
+
+    for mwfile in mwtab.read_files(name[1]):
+
+        study_title = mwfile["PROJECT"]["PROJECT_TITLE"]
+        measurment = mwfile['MS_METABOLITE_DATA']['Data']
 
     for i in range(0,len(measurment),1):
 
         for j2 in measurment[i].keys(): ## dictionary of subjects
-            if j2 != "metabolite_name":
+            # print(j2)
+            if j2 != "Metabolite":
                 dicte.setdefault(j2,{})
 
         for j in measurment[i].keys():
-            if j == "metabolite_name":  # measurement = {metabolite_name:name,....}
+            if j == "Metabolite":  # measurement = {metabolite_name:name,....}
                 metabol_name = measurment[i][j]  ## it will always have a value since measurement first key is metabolite_name ..
                 liste.append(measurment[i][j])  ## list of metabolites
             else:
@@ -185,25 +209,26 @@ def mwtabReader(name):
                         dicte[subject][metabol_name] =  measurment[i][subject]
                     # else:
                         # dicte[subject][metabol_name] = "0.0"
-
     return [dicte,study_title]
 
 
 
 
 def checkDatabases(name):  # check if our used databases are used.
-    mw = next(mwtab.read_files(name[0],name[1]))
+
+    ## checks which dataset we support exists in the file
+    for mwfile in mwtab.read_files(name[1]):
+        data = mwfile['MS_METABOLITE_DATA']['Metabolites']
     database = []
-    data = mw["METABOLITES"]["METABOLITES_START"]["DATA"]
-    keywords = ['kegg_id','pubchem_id','hmdb_id']
+    keywords = ['kegg_id', 'pubchem_id', 'hmdb_id','PubChem','KEGG','PUBCHEM','HMDB']
     for i in data[0].keys():
         if i in keywords:
             database.append(i)
-        # else:
-        #     print (i)
-    return database
-def databaseProccesing(name):
 
+    return database
+
+
+def databaseProccesing(name):
     """
     checks if we have any of our databases
     checks which database has more metabolites available
@@ -211,29 +236,37 @@ def databaseProccesing(name):
     # if everything is ok it returns the name and data of database
     """
     temp = checkDatabases(name)
+
     mapped = {}
     mapped_final = {}
-    n = "" # temp name
-    l = [] # temp len
-    value_filter = [0,"0","N",""," "]
+    n = ""  # temp name
+    l = []  # temp len
+    value_filter = [0, "0", "N", "", " "]
+
     if len(temp) > 0:  ## checks if we have any of our databases
-        mw = next(mwtab.read_files(name[0],name[1]))
-        data = mw["METABOLITES"]["METABOLITES_START"]["DATA"]
+
+        for mwfile in mwtab.read_files(name[1]):
+            data = mwfile['MS_METABOLITE_DATA']['Metabolites']
+            # print(data)
         for i in temp:  ## i is database name
             mapped.setdefault(i, {})
-            for j in range(0,len(data),1):  ## j is index of ordered dict from mwtab file
+            for j in range(0, len(data), 1):  ## j is index of ordered dict from mwtab file
+                # print(i,j)
                 if data[j][i] not in value_filter:
-                    mapped[i][data[j]["metabolite_name"]] = data[j][i]
+
+                    mapped[i][data[j]["Metabolite"]] = data[j][i]
         n = temp[0]
         l = mapped[n]
-        for k,v in mapped.items():   ## checks which database has more metabolites available
-            if len(v) > len(l) :
-                l = v ; n = k
+
+        for k, v in mapped.items():  ## checks which database has more metabolites available
+            if len(v) > len(l):
+                l = v;
+                n = k
         if len(l) == 0:  ## checks which database has more metabolites available
             return 0
         else:
-            mapped_final[n] = l   # if everything is ok it returns the name and data of database
-            return  mapped_final
+            mapped_final[n] = l  # if everything is ok it returns the name and data of database
+            return mapped_final
     else:
         return 0
 
@@ -249,25 +282,33 @@ def mwlab_mapper():
 
 
     temp_name = request.json['data'].split()
+
+    for word in temp_name:
+        if 'STUDY_ID' in word:
+            std_id = word.split(":")[1][2:]
+        if 'ANALYSIS_ID' in word:
+            analysis_id = word.split(":")[1][2:]
+
+    # print(temp_name)
     # print (name.split())
-    std_id = temp_name[2].split(":")[1][2:]
-    analysis_id = temp_name[3].split(":")[1][2:]
-    # print (std_id,analysis_id)
+    # std_id = temp_name[2].split(":")[1][2:]
+    # analysis_id = temp_name[3].split(":")[1][2:]
+    print (std_id,analysis_id)
     name = [std_id,analysis_id]
+
+
+    labels = label_extraction(name)
     blacklist = []
     mapped = {}
     mapping_metabolites = {}
     mapping_data = databaseProccesing(name)  ## dictionary or 0
+    # print(mapping_data)
     if mapping_data != 0:
 
-        # data = open("../datasets/assets/mapping_all.txt","r+").readlines()
-        # for line in data:
-        #     tempo = line.split(",")
-        #     mapping_metabolites[tempo[0]]=tempo[1]
-        #
         isMapped = {}
-        #
-        #
+
+        # with open('../datasets/assets/synonym_mapping_taj.json') as f:
+        #     mapping_data1 = json.load(f)
         with open('../datasets/assets/recon2.json') as f:
             mapping_data1 = json.load(f)
             mapping_data1 = mapping_data1["metabolites"]
@@ -276,48 +317,46 @@ def mwlab_mapper():
             mapping_data2 = json.load(f)
 
         local = mwtabReader(name)
-        measurments_data= local[0]
+        measurments_data = local[0]
         study_name = local[1]
-        temp = list(mapping_data.keys())[0] # name of the database
-        for sample,metabols_data in measurments_data.items():
+
+
+        temp = list(mapping_data.keys())[0]  # name of the database
+        for sample, metabols_data in measurments_data.items():
             mapped.setdefault(sample, {})
             liste = []
             temp_dict = {}
-            for metabol_name2,id in mapping_data[temp].items():
-                for metabol_name1 , measurment in metabols_data.items():
+            for metabol_name2, id in mapping_data[temp].items():
+                for metabol_name1, measurment in metabols_data.items():
                     if metabol_name1 == metabol_name2:
 
-                        # if id in mapping_metabolites.keys():
-                        #     temp_dict[mapping_metabolites[id].strip()]=float(measurment)
-                        #     isMapped[mapping_metabolites[id]] = {'isMapped':True}
-                        #
+
                         if id in mapping_data1.keys():
-                            temp_dict[id]=float(measurment)
-                            isMapped[id] = {'isMapped':True}
+                            temp_dict[id] = float(measurment)
+                            isMapped[id] = {'isMapped': True}
 
                         elif id in mapping_data2.keys():
-                            temp_dict[mapping_data2[id]] =float(measurment)
-                            isMapped[mapping_data2[id]] = {'isMapped':True}
+                            temp_dict[mapping_data2[id]] = float(measurment)
+                            isMapped[mapping_data2[id]] = {'isMapped': True}
+
+
                         else:
-                            temp_dict[id]=float(measurment)
-                            isMapped[id] = {'isMapped':False}
+                            temp_dict[id] = float(measurment)
+                            isMapped[id] = {'isMapped': False}
 
+            mapped[sample] = {"Metabolites": temp_dict, "Label": labels[sample]}
 
-
-
-            mapped[sample] = {"Metabolites": temp_dict, "Label": "not_provided"}
-
-        final = {"study_name":study_name,"analysis":mapped,"group":"not_provided",'isMapped':isMapped}
+        final = {"study_name": study_name, "analysis": mapped, "group": "not_provided", 'isMapped': isMapped}
         if len(list(final['analysis'].keys())) > 1:
-            new_data = group_avg(final,2)
+            new_data = group_avg(final, 2)
             for k2, v2 in new_data.items():
                 final['analysis'][k2] = v2
+
+        # print(final)
         return (final)
 
     else:
-        return ({1:"Error"})
-    # return jsonify({1:1})
-
+        return ({1: "Error"})
 
 
 
@@ -349,9 +388,9 @@ def group_avg(sample_data3,checker=1):
 
         if v["Label"].lower() not in labels_case:
             labels_case.setdefault(v["Label"],[])
-            labels_case[v["Label"].lower()].append(v['Metabolites'])
+            labels_case[v["Label"]].append(v['Metabolites'])
         else:
-            labels_case[v["Label"].lower()].append(v['Metabolites'])
+            labels_case[v["Label"]].append(v['Metabolites'])
 
 
     if len(list(labels_case.keys())) > 1:
@@ -395,20 +434,6 @@ def average(list_of_dicte):
         final[case[0]] ={"Label":case[0],"Metabolites":result}
 
     return final
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
