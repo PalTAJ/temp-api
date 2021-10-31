@@ -159,7 +159,6 @@ def meta_data_processing(meta):
 
 ################################################### MWtab codes below
 
-
 def label_extraction(name):
 
     results = {}
@@ -169,10 +168,13 @@ def label_extraction(name):
     for mwfile in mwtab.read_files(name[1]):
         data = mwfile['SUBJECT_SAMPLE_FACTORS']
 
-    k = list(data[0]['Factors'].keys())[0]
-
-    for subject in data:
-        results[subject['Sample ID']] = subject['Factors'][k]
+    k = list(data[0]['Factors'].keys())
+    if len(k) > 0:
+        for subject in data:
+            results[subject['Sample ID']] = subject['Factors'][k[0]]
+    else:
+        for subject in data:
+            results[subject['Sample ID']] = 'no-Label'
 
     return results
 
