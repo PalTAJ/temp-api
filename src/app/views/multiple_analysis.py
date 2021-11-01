@@ -163,18 +163,18 @@ def label_extraction(name):
 
     results = {}
 
-    possible_keys = set(('Group','Treatment','Time Point'))
-    data = {}
-    for mwfile in mwtab.read_files(name[1]):
-        data = mwfile['SUBJECT_SAMPLE_FACTORS']
+#     possible_keys = set(('Group','Treatment','Time Point'))
+#     data = {}
+#     for mwfile in mwtab.read_files(name[1]):
+#         data = mwfile['SUBJECT_SAMPLE_FACTORS']
 
-    k = list(data[0]['Factors'].keys())
-    if len(k) > 0:
-        for subject in data:
-            results[subject['Sample ID']] = subject['Factors'][k[0]]
-    else:
-        for subject in data:
-            results[subject['Sample ID']] = 'no-Label'
+#     k = list(data[0]['Factors'].keys())
+#     if len(k) > 0:
+#         for subject in data:
+#             results[subject['Sample ID']] = subject['Factors'][k[0]]
+#     else:
+#         for subject in data:
+#             results[subject['Sample ID']] = 'no-Label'
 
     return results
 
@@ -285,11 +285,21 @@ def mwlab_mapper():
 
     temp_name = request.json['data'].split()
 
+#     for word in temp_name:
+#         if 'STUDY_ID' in word:
+#             std_id = word.split(":")[1][2:]
+#         if 'ANALYSIS_ID' in word:
+#             analysis_id = word.split(":")[1][2:]
+    c = 0
     for word in temp_name:
         if 'STUDY_ID' in word:
             std_id = word.split(":")[1][2:]
+            c+=1
         if 'ANALYSIS_ID' in word:
             analysis_id = word.split(":")[1][2:]
+            c+=1
+    if c != 2:
+        return {1: "Error"}
 
     # print(temp_name)
     # print (name.split())
@@ -346,7 +356,9 @@ def mwlab_mapper():
                             temp_dict[id] = float(measurment)
                             isMapped[id] = {'isMapped': False}
 
-            mapped[sample] = {"Metabolites": temp_dict, "Label": labels[sample]}
+#             mapped[sample] = {"Metabolites": temp_dict, "Label": labels[sample]}
+            mapped[sample] = {"Metabolites": temp_dict, "Label": "not_provided"}
+
 
         final = {"study_name": study_name, "analysis": mapped, "group": "not_provided", 'isMapped': isMapped}
         if len(list(final['analysis'].keys())) > 1:
